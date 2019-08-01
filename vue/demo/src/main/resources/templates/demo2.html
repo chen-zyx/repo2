@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>显示页面</title>
+
+    <!--<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css" >-->
+
+    <link rel="stylesheet" href="plugins/element/index.css">
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script type="text/javascript" src="plugins/vue.js"></script>
+
+
+    <script src="plugins/element/index.js"></script>
+</head>
+<body>
+
+<div id="app">
+    {{mesg}}
+
+    <template>
+        <el-table
+                :data="tableData"
+                style="width: 100%">
+            <el-table-column
+                    prop="empno"
+                    label="员工编号"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="ename"
+                    label="员工姓名"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="sal"
+                    label="员工薪资"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="job"
+                    label="员工职位"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    prop="dept.dname"
+                    label="部门名称"
+                    width="180">
+            </el-table-column>
+            <el-table-column
+                    label="操作">
+                    <el-button>默认按钮</el-button>
+                    <el-button type="primary">主要按钮</el-button>
+                    <el-button type="success">成功按钮</el-button>
+
+            </el-table-column>
+        </el-table>
+    </template>
+
+    <select>
+        <option v-for="p in prvs" v-text="p.dname"></option>
+    </select>
+
+
+</div>
+<script type="text/javascript">
+    new Vue({
+        el: "#app",
+        data: {
+            mesg: "hello",
+            tableData: [],
+            prvs: []
+        },
+        mounted: function () {
+            var _this = this;
+            axios.get('getEmp')
+                .then(function (response) {
+                    console.log(response);
+                    _this.tableData = response.data;
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+            axios.get('getDept')
+            //注意，此处最好使用箭头函数 ，因为箭头函数不绑定this
+                .then(function (response) {
+                    console.log(response);
+                    _this.prvs = response.data;
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        },
+        methods: {}
+    });
+
+</script>
+</body>
+</html>
