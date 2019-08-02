@@ -20,4 +20,14 @@ public class EmpServiceImpl implements IEmpService {
     public List<Emp> findAll() {
         return iEmpDao.findAll();
     }
+
+    @Override
+    public Emp findByEmpno(Integer empno) {
+        return iEmpDao.findByEmpno(empno);
+    }
+
+    @Override
+    public int updateEmp(Emp emp) {
+        return iEmpDao.updateEmp(emp);
+    }
 }

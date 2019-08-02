@@ -27,4 +27,25 @@ public interface IEmpDao {
     })
     public List<Emp> findAll();
 
+    /**
+     * 根据员工编号查询员工信息
+     * @return
+     */
+    @Select("select * from emp e left join dept d on e.deptno=d.deptno where e.empno=#{empno}")
+    @Results({
+            @Result(id = true,column = "empno",property = "empno"),
+            @Result(column = "ename",property = "ename"),
+            @Result(column = "sal",property = "sal"),
+            @Result(column = "job",property = "job"),
+            @Result(column = "deptno",property = "dept",one = @One(select = "com.aaa.demo.dao.IDeptDao.findByID",fetchType = FetchType.EAGER))
+    })
+    public Emp findByEmpno(Integer empno);
+
+    /**
+     * 修改员工信息
+     * @return
+     */
+    @Update("update emp set ename=#{ename},job=#{job},sal=#{sal},deptno=#{deptno} where empno=#{empno}")
+    public int updateEmp(Emp emp);
+
 }

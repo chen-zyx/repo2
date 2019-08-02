@@ -1,86 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org/">
 <head>
     <meta charset="UTF-8">
     <title>显示页面</title>
-
-    <!--<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css" >-->
-
-    <link rel="stylesheet" href="plugins/element/index.css">
-
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-
-    <script type="text/javascript" src="plugins/vue.js"></script>
-
-
-    <script src="plugins/element/index.js"></script>
+    <th:block th:include="common/common"></th:block>
 </head>
 <body>
 
+    <h1>员工信息管理</h1>
 <div id="app">
-    {{mesg}}
-
     <template>
-        <el-table
-                :data="tableData"
-                style="width: 100%">
-            <el-table-column
-                    prop="empno"
-                    label="员工编号"
-                    width="180">
+        <el-table :data="tableData" style="width: 100%">
+
+            <el-table-column prop="empno" label="员工编号" width="180"></el-table-column>
+
+            <el-table-column prop="ename" label="员工姓名" width="180"></el-table-column>
+
+            <el-table-column prop="sal" label="员工薪资" width="180"></el-table-column>
+
+            <el-table-column prop="job" label="员工职位" width="180"></el-table-column>
+
+            <el-table-column prop="dept.dname" label="部门名称" width="180"></el-table-column>
+
+            <el-table-column label="操作"  width="180">
+                <template slot-scope="scope">
+                    <el-button type="primary" @click="dialogFormVisible = true" v-on:click="Edit(scope.row.empno)">编辑</el-button>
+                </template>
             </el-table-column>
-            <el-table-column
-                    prop="ename"
-                    label="员工姓名"
-                    width="180">
-            </el-table-column>
-            <el-table-column
-                    prop="sal"
-                    label="员工薪资"
-                    width="180">
-            </el-table-column>
-            <el-table-column
-                    prop="job"
-                    label="员工职位"
-                    width="180">
-            </el-table-column>
-            <el-table-column
-                    prop="dept.dname"
-                    label="部门名称"
-                    width="180">
-            </el-table-column>
-            <el-table-column
-                    label="操作">
-                    <el-button>默认按钮</el-button>
-                    <el-button type="primary">主要按钮</el-button>
-                    <el-button type="success">成功按钮</el-button>
+
+            <el-table-column label="操作"  width="180">
+                <template slot-scope="scope">
+                    <el-button type="success" @click="Delete(scope.row.empno)">删除</el-button>
+                </template>
 
             </el-table-column>
+
         </el-table>
     </template>
 
-    <select>
-        <option v-for="p in prvs" v-text="p.dname"></option>
-    </select>
-
+    <!--编辑对应的弹出框-->
+    <el-dialog title="修改员工信息" :visible.sync="dialogFormVisible">
+        <el-form :model="form">
+            <el-form-item label="员工姓名" :label-width="formLabelWidth" >
+                <el-input v-model="emp.ename" style="width: 50%;"  ></el-input>
+            </el-form-item>
+            <el-form-item label="员工薪资" :label-width="formLabelWidth">
+                <el-input v-model="emp.sal" style="width: 50%;"></el-input>
+            </el-form-item>
+            <el-form-item label="员工职位" :label-width="formLabelWidth">
+                <el-input v-model="emp.job" style="width: 50%;"></el-input>
+            </el-form-item>
+            <el-form-item label="所属部门" :label-width="formLabelWidth">
+                <el-select  v-model="selected"  >
+                    <el-option v-for="p in prvs" :key="p.deptno" :value="p.deptno" :label="p.dname"></el-option>
+                </el-select>
+            </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="dialogFormVisible = false" v-on:click="update">确定修改</el-button>
+        </div>
+    </el-dialog>
 
 </div>
 <script type="text/javascript">
     new Vue({
         el: "#app",
         data: {
-            mesg: "hello",
-            tableData: [],
-            prvs: []
+            tableData: [],  //员工列表信息
+            prvs: [],       //部门信息
+            dialogTableVisible: false,
+            dialogFormVisible: false,
+            emp: {},         //员工个人信息
+            selected:'',
+            form: {
+                name:'',
+                region: '',
+                sal:'',
+                job:'',
+                delivery: false,
+                desc: ''
+            },
+            formLabelWidth: '80px'
+
         },
         mounted: function () {
             var _this = this;
-            axios.get('getEmp')
-                .then(function (response) {
+            axios.get('getEmp').then(function (response) {
                     console.log(response);
                     _this.tableData = response.data;
-                })
-                .catch(function (error) {
+                }).catch(function (error) {
                     console.log(error);
                 });
             axios.get('getDept')
@@ -93,7 +102,73 @@
                     console.log(error);
                 });
         },
-        methods: {}
+        methods: {
+            Edit: function (empno) {
+               axios.post("/getSingleEmp",{
+                    empno:empno
+                })
+                //注意，此处最好使用箭头函数 ，因为箭头函数不绑定this
+                    .then((response)=>{
+                        console.log(response);
+                        this.emp = response.data;
+                        this.selected=this.emp.dept.dname;
+                    }).catch((error)=>{
+                        console.log(error);
+                    });
+            },
+            update:function () {
+                this.emp.deptno=this.selected;
+                axios.post("/getUpdateEmp",this.emp)
+                //注意，此处最好使用箭头函数 ，因为箭头函数不绑定this
+                    .then((response)=>{
+                        console.log(response);
+                        var a = response.data;
+                        if(a==1){
+                         alert("修改成功");
+                        location.href="to1";
+                        }else{
+                            alert("修改失败");
+                        }
+                    })
+                    .catch((error)=>{
+                        console.log(error);
+                    });
+            },
+            Delete: function (empno) {
+                this.$confirm('此操作将永久删除该员工信息, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.post("/getDeleteEmp",{
+                        empno:empno
+                    }).then((response)=>{
+                        console.log(response);
+                        a = response.data;
+                        if (a==1){
+                            this.$message({
+                                type: 'success',
+                                message: '删除成功!'
+                            });
+                        } else{
+                            this.$message({
+                                type: 'error',
+                                message: '删除失败!'
+                            });
+                        }
+                    }).catch((error)=>{
+                        console.log(error);
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+
+            }
+
+        }
     });
 
 </script>
