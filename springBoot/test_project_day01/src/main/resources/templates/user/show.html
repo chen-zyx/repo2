@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <title>用户信息界面</title>
+
+    <th:block th:include="common/common::element"></th:block>
+    <style>
+        .avatar-uploader .el-upload {
+            border: 1px dashed #d9d9d9;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .avatar-uploader .el-upload:hover {
+            border-color: #409EFF;
+        }
+        .avatar-uploader-icon {
+            font-size: 28px;
+            color: #8c939d;
+            width: 178px;
+            height: 178px;
+            line-height: 178px;
+            text-align: center;
+        }
+        .avatar {
+            width: 178px;
+            height: 178px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<div id="app" style="height: 100%">
+    <div style="margin-bottom: 10px">
+        <el-button type="primary" plain @click="handleAdd">添加用户</el-button>
+        <el-input v-model="keyword" style="width:30%;"></el-input>
+        <el-button type="primary"  @click="searchData">搜索</el-button>
+    </div>
+
+    <el-table
+            :data="user"
+            border
+            height="315"
+            style="width: 100%;text-align: center;">
+        <el-table-column prop="uid" label="用户编号" width="100" height="25"></el-table-column>
+
+        <el-table-column prop="uname" label="用户姓名" width="100"></el-table-column>
+
+        <el-table-column prop="upasswd" label="用户密码" width="100"></el-table-column>
+
+        <el-table-column prop="uage" label="用户年龄" width="100"></el-table-column>
+
+        <el-table-column  label="用户角色" width="100">
+            <template slot-scope="scope">
+                <template v-for="(item,index) in scope.row.roleList">
+                    <template v-if="index>0">,</template>
+                    {{item.rname}}
+                </template>
+            </template>
+        </el-table-column>
+
+       <!-- <el-table-column prop="headimg"  label="用户头像" width="160">
+           <img  :src="imageUrl" class="avatar">
+        </el-table-column>
+-->
+        <el-table-column prop="uaddr" label="用户地址" width="100"></el-table-column>
+
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button
+                        size="mini"
+                        @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button
+                        size="mini"
+                        type="danger"
+                        @click="handleDelete(scope.row)">删除</el-button>
+                <el-button
+                        size="mini"
+                        @click="handleDownLoad(scope.row)">下载</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+    <el-pagination
+            style="margin-top: 10px"
+            background
+            layout="prev, pager, next"
+            :page-size="pageSize"
+            :current-page="currentPage"
+            :total="total"
+            @current-change="pageChange"
+    >
+    </el-pagination>
+
+    <el-dialog :title="dialogtitle" :visible="dialogFormVisible" :before-close="handleClose">
+        <el-form :model="form" :rules="rules" ref="form" size="mini">
+            <el-form-item label="用户名" prop="uname" :label-width="formLabelWidth">
+                <input  type="hidden"  v-model="form.uid" style="width: 50%;"></input>
+                <el-input v-model="form.uname" style="width: 50%;"></el-input>
+            </el-form-item>
+
+            <el-form-item label="密 码" prop="upasswd" :label-width="formLabelWidth">
+                <el-input v-model="form.upasswd" type="password" style="width: 50%"></el-input>
+            </el-form-item>
+
+            <el-form-item label="年 龄" prop="uage" :label-width="formLabelWidth">
+                <el-input v-model="form.uage" style="width: 50%"></el-input>
+            </el-form-item>
+
+            <el-form-item label="角 色"  :label-width="formLabelWidth">
+                <el-select v-model="form.roleList" multiple placeholder="请选择" value-key="rid">
+                    <el-option
+                            v-for="item in roles"
+                            :key="item.rid"
+                            :label="item.rname"
+                            :value="item">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+
+            <el-form-item label="地 址" prop="uaddr" :label-width="formLabelWidth">
+                <el-input v-model="form.uaddr" style="width: 50%"></el-input>
+            </el-form-item>
+
+            <el-form-item label="上传头像" :label-width="formLabelWidth">
+                <el-upload
+                        class="avatar-uploader"
+                        action="user/upload"
+                        :show-file-list="false"
+                        :on-success="uploadSuccess"
+                        :before-upload="beforeUpload">
+                    <img v-if="imageUrl" :src="imageUrl" class="avatar">
+                    <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                </el-upload>
+            </el-form-item>
+        </el-form>
+
+        <div slot="footer" class="dialog-footer">
+            <el-button @click="dialogFormVisible = false">取 消</el-button>
+            <el-button type="primary" @click="formSubmit">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script type="text/javascript">
+    var Form={
+        uid:'',
+        uname: '',
+        upasswd: '',
+        uage: '',
+        uaddr: '',
+        //用户上传头像文件名
+        headimg:'',
+        roleList:[]
+    };
+    new Vue({
+        el: "#app",
+        data: {
+            mesg: "hello",
+            user: [],
+            roles:[],
+            //对话框是否显示
+            dialogFormVisible: false,
+            //对话框标题
+            dialogtitle: '新增用户',
+            formLabelWidth: '120px',
+            form: Form,
+            //总记录数
+            total:0,
+            //页面存储数据条数
+            pageSize:10,
+            //当前页面
+            currentPage:1,
+            //关键字
+            keyword:'',
+            //用户头像地址
+            imageUrl:'',
+            rules: {
+                uname: [
+                    {required: true, message: '请输入用户名', trigger: 'blur'},
+                    {min: 2, max: 10, message: '长度在 2 到 10 个字符', trigger: 'blur'}
+                ],
+                upasswd: [
+                    {required: true, message: '请输入密码', trigger: 'blur'},
+                ],/*
+                uage: [
+                    {required: true, message: '请输入年龄', trigger: 'blur'},
+                    {min: 1, max: 3, message: '有效的年龄', trigger: 'blur'}
+                ],*/
+                uaddr: [
+                    {required: true, message: '请输入地址', trigger: 'blur'},
+                    {min: 2, max: 10, message: '长度在 2 到 10 个字符', trigger: 'blur'}
+                ],
+            },
+        },
+        mounted: function () {
+            this.loadTableData();
+            //自动加载获取所有角色
+            axios.get('role/getRoles').then((response)=>{
+               // console.log(response);
+                this.roles=response.data;
+            })
+        },
+        methods: {
+            //加载表格内容
+            loadTableData:function(){
+                //分页发送请求需要带上当前页
+                //返回数据包括总记录数和每页数据
+                axios.post('user/getUsers',{currentPage:this.currentPage,keyword: this.keyword}).then((response) => {
+                    console.log(response);
+                    this.user = response.data.rows;
+                    this.total=response.data.total;
+                    this.pageSize=response.data.pageSize;
+                   // this.imageUrl="http://localhost:8001/img/"+response.data.rows[0].headimg;
+                }).catch((error) => {
+                    console.log(error);
+                })
+            },
+            //对话框关闭事件
+            handleClose: function () {
+                this.dialogFormVisible = false;
+            },
+            //新增事件
+            handleAdd:function(){
+                this.dialogtitle="新增用户";
+                this.dialogFormVisible=true;
+                this.form=Form;
+                this.imageUrl='';
+            },
+            formSubmit: function () {
+                //提交表单前需要先进行校验
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        //alert("校验成功");
+                        axios.post('user/saveUpdate', this.form).then((response) => {
+                            if (response.data.success) {
+                                alert("操作成功");
+                                this.dialogFormVisible=false;
+                                this.loadTableData();
+                            }else{
+                                alert(response.data.error);
+                            }
+                        }).catch((error) => {
+                            console.log(error);
+                        });
+                    }
+                })
+            },
+            //编辑弹出窗口事件  编辑事件
+            handleEdit:function (row) {
+                this.dialogtitle="修改用户";
+                this.dialogFormVisible=true;
+               /* if(row.uid!=null){
+                    //修改室防止双向绑定 ，进行json数据转换
+                }*/
+                this.form=JSON.parse(JSON.stringify(row));
+                this.imageUrl="http://localhost:8001/img/"+row.headimg;
+            },
+            //删除事件
+            handleDelete:function (row) {
+                this.$confirm('确定是否要删除此用户, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                   axios.get('user/deleteUser',{params:{uid:row.uid}}).then((response)=>{
+                       //提示操作成功
+                       if(response.data.success){
+                           alert("操作成功");
+                            //刷新表格内容
+                            this.loadTableData();
+                       }else{
+                           alert("操作失败！");
+                       }
+                   }).catch();
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            //分页改变当前页事件
+            pageChange:function (currentPage) {
+                this.currentPage=currentPage;
+                this.loadTableData();
+            },
+            //搜索事件
+            searchData:function () {
+                this.loadTableData();
+            },
+            //上传头像完成之后事件
+            uploadSuccess:function (response, file,fileList) {
+                this.form.headimg=response;
+                console.log(URL.createObjectURL(file.raw));
+                this.imageUrl = URL.createObjectURL(file.raw);
+            },
+            //上传头像完成之前事件
+            beforeUpload:function (file) {
+                const isJPG = file.type === 'image/jpeg';
+                const isLt2M = file.size / 1024 / 1024 < 2;
+
+                if (!isJPG) {
+                    this.$message.error('上传头像图片只能是 JPG 格式!');
+                }
+                if (!isLt2M) {
+                    this.$message.error('上传头像图片大小不能超过 2MB!');
+                }
+                return isJPG && isLt2M;
+            },
+            //下载事件
+            handleDownLoad:function (row) {
+                window.location.href="user/downLoad?uid="+row.uid;
+            }
+        }
+
+    });
+</script>
+
+</body>
+</html>

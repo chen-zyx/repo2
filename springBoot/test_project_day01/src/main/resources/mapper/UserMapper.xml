@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chen.test_project_day01.dao.IUserDao">
+    <resultMap id="userMap" type="User" autoMapping="true">
+        <id column="uid" property="uid"></id>
+        <collection property="roleList" ofType="Role">
+            <id property="rid" column="rid"></id>
+            <result column="rname" property="rname"></result>
+        </collection>
+    </resultMap>
+    <select id="listAll" resultMap="userMap">
+        select *,r.rid,r.rname from user u left join user_role ur on u.uid=ur.uid left join role r on ur.rid=r.rid  where u.uname like '%${keyword}%' or u.uaddr like '%${keyword}%' order by u.uid limit ${(currentPage-1)*pageSize},${pageSize}
+    </select>
+    <select id="findByUname" resultMap="userMap">
+        select * from user where uname=#{uname}
+    </select>
+    <select id="findById" resultMap="userMap">
+        select * from user where uid=#{uid}
+    </select>
+    <select id="findByUnameAndPwd" resultMap="userMap">
+        select * from user where uname=#{uname} and upasswd=#{upasswd}
+    </select>
+    <insert id="save" useGeneratedKeys="true" keyProperty="uid">
+        insert into user(uname,upasswd,uage,uaddr,headimg) values(#{uname},#{upasswd},#{uage},#{uaddr},#{headimg})
+    </insert>
+    <insert id="saveUserRole">
+        insert into user_role(uid,rid) values(#{uid},#{rid})
+    </insert>
+    <delete id="deleteUserRole">
+        delete from  user_role where uid=#{uid}
+    </delete>
+    <update id="update">
+        update user set uname=#{uname},upasswd=#{upasswd},uage=#{uage},uaddr=#{uaddr},headimg=#{headimg} where uid=#{uid}
+    </update>
+    <delete id="delete">
+        delete from user where uid=#{uid}
+    </delete>
+    <select id="getCount" resultType="java.lang.Integer">
+        select count(u.uid) from user u left join user_role ur on u.uid=ur.uid left join role r on ur.rid=r.rid  where u.uname like '%${keyword}%' or u.uaddr like '%${keyword}%'
+    </select>
+    <select id="findModOfUser" resultType="Module">
+        select * from user u left join user_role ur on u.uid=ur.uid left join role r on ur.rid=r.rid left join role_module rm on r.rid=rm.rid left join module m on m.mid=rm.mid left join (select * from module) a  on m.mid=a.parentid where u.uid=#{user.uid};
+    </select>
+    <select id="findFirstLevelMod" resultType="Module">
+        select distinct  m.*  from user u left join user_role ur on u.uid=ur.uid left join role r on ur.rid=r.rid left join role_module rm on r.rid=rm.rid left join module m on m.mid=rm.mid where u.uid=#{user.uid} and m.mlevel=1;
+    </select>
+    <select id="findSecondLevelMod" resultType="Module">
+select u.uid,u.uname,a.mid,a.mname,a.mpath from user u inner join user_role ur on u.uid=ur.uid inner join role r on ur.rid=r.rid inner join role_module rm on r.rid=rm.rid inner join module m on m.mid=rm.mid inner join (select * from module) a  on m.mid=a.parentid where u.uid=#{user.uid} and a.parentid=#{parent.mid}
+</select>
+</mapper>

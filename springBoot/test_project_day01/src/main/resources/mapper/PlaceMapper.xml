@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chen.test_project_day01.dao.IPlaceDao">
+    <select id="findFirstLevel" resultType="Place">
+        select * from place p where p.province=0
+    </select>
+    <select id="findSecondLevel" resultType="Place">
+        select DISTINCT p1.* from place p left join place p1 on p1.province=p.p_id where p1.province=#{p.p_id}
+    </select>
+</mapper>

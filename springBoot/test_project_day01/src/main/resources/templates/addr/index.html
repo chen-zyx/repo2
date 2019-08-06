@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <title>地址</title>
+    <th:block th:include="common/common"></th:block>
+</head>
+<body>
+<div id="app">
+    {{mesg}}
+    <el-cascader
+            :options="places"
+            @active-item-change="handleItemChange"
+            :props="props">
+    </el-cascader>
+
+</div>
+<script type="text/javascript">
+    new Vue({
+        el:"#app",
+        data:{
+            mesg:"hello",
+            places:[{
+                name:'',
+                children: []
+            }],
+            props: {
+                value: 'name',
+                label:'name',
+                children: 'children'
+            }
+        },
+        mounted:function(){
+            axios.get('place/getPlace').then((response)=>{
+                console.log(response);
+                this.places=response.data;
+            })
+        },
+        methods:{
+            handleItemChange:function(val) {
+                console.log('active item:', val);
+                setTimeout(_ => {
+                    if (val.indexOf(this.places.name) > -1 && !this.places[val].children.length) {
+                        this.places[val].children = [{
+                            label: 'children'
+                        }];
+                    } else if (val.indexOf(this.places[1].name) > -1 && !this.places[1].children.length) {
+                        this.places[1].children = [{
+                            label: 'children'
+                        }];
+                    }
+                }, 300);
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

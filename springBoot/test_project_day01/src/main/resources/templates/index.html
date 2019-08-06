@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org/">
+<head>
+    <meta charset="UTF-8">
+    <title>XXX管理系统</title>
+    <th:block th:include="common/common::element"></th:block>
+</head>
+<body>
+<div id="app">
+
+    <el-container style="background-color:#B3C0D1">
+        <el-header><h1>XXX管理系统</h1></el-header>
+        <el-container>
+            <el-aside width="300px" style="background-color: darkcyan">
+                <!--树形菜单-->
+                <el-tree :data="module" :props="defaultProps"  @node-click="NodeClick"></el-tree>
+
+            </el-aside>
+            <el-main style="background: #DCDFE6;padding:0px;background-color:silver;height: 540px;" >
+                <el-tabs v-model="activeName" type="border-card" style="height: 540px;" @tab-remove="tabRemove">
+                    <el-tab-pane :label="item.mname" :name="item.mname" v-for="item in tabData" :closable="item.closable">
+                        <iframe :src="item.mpath" width="100%" height="450" scrolling="no" frameborder="no"></iframe>
+                    </el-tab-pane>
+                   <!-- <el-tab-pane label="配置管理">配置管理</el-tab-pane>
+                    <el-tab-pane label="角色管理">角色管理</el-tab-pane>
+                    <el-tab-pane label="定时任务补偿">定时任务补偿</el-tab-pane>-->
+                </el-tabs>
+            </el-main>
+        </el-container>
+    </el-container>
+
+
+</div>
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            module:[],
+            defaultProps: {
+                children: 'children',
+                label: 'mname'
+            },
+            tabData:[{
+                mid:1,
+                mname:'首页',
+                mpath:'toWelcome',
+                closable:false   //首页默认不关闭选项卡
+            }
+            ],
+            //默认选中的项
+            activeName:'首页'
+        },
+        mounted:function (){
+          axios.get('getModules').then((response)=>{
+                this.module=response.data;
+          }).catch((error)=>{
+                console.log(error);
+          })
+        },
+        methods: {
+            //点击菜单添加到选项卡中
+            NodeClick:function(data) {
+                console.log(data);
+                //将节点添加到选项卡数组中
+                //判断一级节点不添加
+                if(data.mlevel==1){
+                    return;
+                }
+                //判断选项卡中是否有当前的菜单节点 有就激活，没有添加
+                var bo=false;
+                for(var index in this.tabData){
+                    if(this.tabData[index].mid==data.mid){
+                        bo=true;
+                        break;
+                    }
+                }
+                if(!bo){
+                    //为选项卡添加默认closable属性 可以关闭
+                    data.closable=true;
+                    this.tabData.push(data);
+                }
+                this.activeName=data.mname;
+            },
+            //选项卡删除事件
+            tabRemove:function (mname) {
+                //定义要删除选项卡的下标 循环遍历得出
+                for(var i in this.tabData){
+                    if(mname==this.tabData[i].mname){
+                        break;
+                    }
+                }
+                //打印并删除此选项卡
+                console.log("要删除选项卡的id"+i);
+                this.tabData.splice(i,1)
+                //如果删除当前选项卡，将上一个选项卡激活
+                if(this.activeName==mname){
+                    this.activeName=this.tabData[i-1].mname;
+                }
+            }
+        }
+
+    });
+</script>
+
+</body>
+</html>
